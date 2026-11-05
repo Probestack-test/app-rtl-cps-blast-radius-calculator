@@ -1,0 +1,142 @@
+{
+  "info" : {
+    "name" : "blast-radius-calculator Mock Test Collection",
+    "description" : "Generated from ForgeSphere mock endpoint definitions.",
+    "schema" : "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable" : [ {
+    "key" : "mockBaseUrl",
+    "value" : "https://forgesphere.probestack.io/mock-api/v1/api/mocks/mock-db28d3bb"
+  }, {
+    "key" : "userEmail",
+    "value" : ""
+  }, {
+    "key" : "id",
+    "value" : "sample-id"
+  } ],
+  "item" : [ {
+    "name" : "GET /blast-radius",
+    "request" : {
+      "method" : "GET",
+      "header" : [ {
+        "key" : "Accept",
+        "value" : "application/json"
+      }, {
+        "key" : "x-user-email",
+        "value" : "{{userEmail}}"
+      } ],
+      "url" : {
+        "raw" : "{{mockBaseUrl}}/blast-radius"
+      }
+    },
+    "response" : [ {
+      "name" : "Mock 200",
+      "code" : 200,
+      "status" : "OK",
+      "header" : [ {
+        "key" : "Content-Type",
+        "value" : "application/json"
+      } ],
+      "body" : "{\"content\":[{\"analysisId\":\"9c8f1a3b-6d7e-4a12-8f5e-123456789abc\",\"targetService\":\"payment-processor\",\"targetVersion\":\"v2.5.0\",\"currentVersion\":\"v2.4.1\",\"environment\":\"PRODUCTION\",\"changeType\":\"API_CONTRACT_CHANGE\",\"changeSummary\":\"Removing discount_code field from /charge request; adding discount_v2 field.\",\"status\":\"COMPLETED\",\"riskLevel\":\"HIGH\",\"riskScore\":78,\"submittedAt\":\"2024-01-01T00:00:00Z\",\"completedAt\":\"2024-01-01T00:00:00Z\",\"requestedBy\":\"amit.kumar@forgesphere.example.com\",\"impact\":{\"usersAffected\":245000,\"usersAffectedPercent\":18.5,\"directConsumers\":[{\"serviceName\":\"checkout-service\",\"trafficSharePercent\":42.5,\"criticality\":\"TIER_0\",\"fallbackAvailable\":false}],\"downstreamServices\":14,\"downstreamDepth\":4,\"regionsAffected\":[{\"region\":\"us-east-1\",\"usersInRegion\":145000,\"trafficPercent\":62.5}],\"customerTierImpact\":[{\"tier\":\"ENTERPRISE\",\"usersAffected\":1200,\"revenueAtRiskUSDPerHour\":45000.0,\"slaBreachRisk\":\"CRITICAL\"}],\"revenueAtRiskUSDPerHour\":125000.0,\"dataLossRisk\":\"MEDIUM\"},\"dependencyGraph\":{\"nodes\":[{\"serviceName\":\"payment-processor\",\"tier\":\"TARGET\",\"estimatedImpactPercent\":100.0}],\"edges\":[{\"from\":\"checkout-service\",\"to\":\"payment-processor\",\"callVolumePerMinute\":4200,\"hasFallback\":false}]},\"recommendations\":{\"recommendedCanaryPercent\":2,\"rollbackTriggers\":[{\"metric\":\"error_rate_pct\",\"threshold\":1.0,\"windowSeconds\":60,\"action\":\"AUTO_ROLLBACK\"}],\"deployWindow\":{\"recommendedStart\":\"2026-11-05T02:00:00Z\",\"recommendedEnd\":\"2026-11-05T06:00:00Z\",\"reason\":\"Lowest traffic window; 90% less user impact than peak.\"},\"requiresApproval\":true,\"requiredApprovers\":[\"vp-engineering@forgesphere.example.com\",\"ciso@forgesphere.example.com\"],\"preDeployChecks\":[\"Contract Chronicle verification passed\",\"Shadow Mirror 24h with 10% traffic\",\"Rollback Commander ready with previous version\"],\"warningNotes\":[\"Enterprise customers use /charge exclusively — SLA impact is severe.\",\"No fallback path exists in checkout-service; cascade risk is high.\"]},\"aiSummary\":\"HIGH risk change. If this fails at 5% error rate during peak, 245K users and $125K/hour revenue are at risk. Enterprise tier (1200 users) has no fallback. Recommendation: 2% canary at 2 AM, auto-rollback at 1% error rate, requires VP+ approval.\",\"auditReference\":\"audit://blast-radius/analysis-9c8f1a3b\"}],\"totalElements\":247,\"totalPages\":13,\"page\":0,\"size\":20,\"summary\":{\"totalAnalyses\":247,\"minimalRiskCount\":98,\"lowRiskCount\":72,\"mediumRiskCount\":48,\"highRiskCount\":22,\"catastrophicCount\":7,\"totalRevenueAtRiskUSD\":845000.0}}"
+    } ]
+  }, {
+    "name" : "POST /blast-radius",
+    "request" : {
+      "method" : "POST",
+      "header" : [ {
+        "key" : "Accept",
+        "value" : "application/json"
+      }, {
+        "key" : "Content-Type",
+        "value" : "application/json"
+      }, {
+        "key" : "x-user-email",
+        "value" : "{{userEmail}}"
+      } ],
+      "url" : {
+        "raw" : "{{mockBaseUrl}}/blast-radius"
+      },
+      "body" : {
+        "mode" : "raw",
+        "raw" : "{\"targetService\":\"payment-processor\",\"targetVersion\":\"v2.5.0\",\"currentVersion\":\"v2.4.1\",\"environment\":\"PRODUCTION\",\"changeType\":\"API_CONTRACT_CHANGE\",\"changeSummary\":\"Removing discount_code field from /charge request; adding discount_v2 field.\",\"affectedEndpoints\":[\"POST /api/v1/charge\",\"POST /api/v1/refund\"],\"changeWindowMinutes\":30,\"proposedCanaryPercent\":5,\"requestedBy\":\"amit.kumar@forgesphere.example.com\",\"pullRequestUrl\":\"https://github.com/forgesphere/payment-service/pull/4821\"}",
+        "options" : {
+          "raw" : {
+            "language" : "json"
+          }
+        }
+      }
+    },
+    "response" : [ {
+      "name" : "Mock 202",
+      "code" : 202,
+      "status" : "OK",
+      "header" : [ {
+        "key" : "Content-Type",
+        "value" : "application/json"
+      } ],
+      "body" : "{\"analysisId\":\"9c8f1a3b-6d7e-4a12-8f5e-123456789abc\",\"targetService\":\"payment-processor\",\"targetVersion\":\"v2.5.0\",\"currentVersion\":\"v2.4.1\",\"environment\":\"PRODUCTION\",\"changeType\":\"API_CONTRACT_CHANGE\",\"changeSummary\":\"Removing discount_code field from /charge request; adding discount_v2 field.\",\"status\":\"COMPLETED\",\"riskLevel\":\"HIGH\",\"riskScore\":78,\"submittedAt\":\"2024-01-01T00:00:00Z\",\"completedAt\":\"2024-01-01T00:00:00Z\",\"requestedBy\":\"amit.kumar@forgesphere.example.com\",\"impact\":{\"usersAffected\":245000,\"usersAffectedPercent\":18.5,\"directConsumers\":[{\"serviceName\":\"checkout-service\",\"trafficSharePercent\":42.5,\"criticality\":\"TIER_0\",\"fallbackAvailable\":false}],\"downstreamServices\":14,\"downstreamDepth\":4,\"regionsAffected\":[{\"region\":\"us-east-1\",\"usersInRegion\":145000,\"trafficPercent\":62.5}],\"customerTierImpact\":[{\"tier\":\"ENTERPRISE\",\"usersAffected\":1200,\"revenueAtRiskUSDPerHour\":45000.0,\"slaBreachRisk\":\"CRITICAL\"}],\"revenueAtRiskUSDPerHour\":125000.0,\"dataLossRisk\":\"MEDIUM\"},\"dependencyGraph\":{\"nodes\":[{\"serviceName\":\"payment-processor\",\"tier\":\"TARGET\",\"estimatedImpactPercent\":100.0}],\"edges\":[{\"from\":\"checkout-service\",\"to\":\"payment-processor\",\"callVolumePerMinute\":4200,\"hasFallback\":false}]},\"recommendations\":{\"recommendedCanaryPercent\":2,\"rollbackTriggers\":[{\"metric\":\"error_rate_pct\",\"threshold\":1.0,\"windowSeconds\":60,\"action\":\"AUTO_ROLLBACK\"}],\"deployWindow\":{\"recommendedStart\":\"2026-11-05T02:00:00Z\",\"recommendedEnd\":\"2026-11-05T06:00:00Z\",\"reason\":\"Lowest traffic window; 90% less user impact than peak.\"},\"requiresApproval\":true,\"requiredApprovers\":[\"vp-engineering@forgesphere.example.com\",\"ciso@forgesphere.example.com\"],\"preDeployChecks\":[\"Contract Chronicle verification passed\",\"Shadow Mirror 24h with 10% traffic\",\"Rollback Commander ready with previous version\"],\"warningNotes\":[\"Enterprise customers use /charge exclusively — SLA impact is severe.\",\"No fallback path exists in checkout-service; cascade risk is high.\"]},\"aiSummary\":\"HIGH risk change. If this fails at 5% error rate during peak, 245K users and $125K/hour revenue are at risk. Enterprise tier (1200 users) has no fallback. Recommendation: 2% canary at 2 AM, auto-rollback at 1% error rate, requires VP+ approval.\",\"auditReference\":\"audit://blast-radius/analysis-9c8f1a3b\"}"
+    } ]
+  }, {
+    "name" : "GET /blast-radius/{analysisId}",
+    "request" : {
+      "method" : "GET",
+      "header" : [ {
+        "key" : "Accept",
+        "value" : "application/json"
+      }, {
+        "key" : "x-user-email",
+        "value" : "{{userEmail}}"
+      } ],
+      "url" : {
+        "raw" : "{{mockBaseUrl}}/blast-radius/{analysisId}"
+      }
+    },
+    "response" : [ {
+      "name" : "Mock 200",
+      "code" : 200,
+      "status" : "OK",
+      "header" : [ {
+        "key" : "Content-Type",
+        "value" : "application/json"
+      } ],
+      "body" : "{\"analysisId\":\"9c8f1a3b-6d7e-4a12-8f5e-123456789abc\",\"targetService\":\"payment-processor\",\"targetVersion\":\"v2.5.0\",\"currentVersion\":\"v2.4.1\",\"environment\":\"PRODUCTION\",\"changeType\":\"API_CONTRACT_CHANGE\",\"changeSummary\":\"Removing discount_code field from /charge request; adding discount_v2 field.\",\"status\":\"COMPLETED\",\"riskLevel\":\"HIGH\",\"riskScore\":78,\"submittedAt\":\"2024-01-01T00:00:00Z\",\"completedAt\":\"2024-01-01T00:00:00Z\",\"requestedBy\":\"amit.kumar@forgesphere.example.com\",\"impact\":{\"usersAffected\":245000,\"usersAffectedPercent\":18.5,\"directConsumers\":[{\"serviceName\":\"checkout-service\",\"trafficSharePercent\":42.5,\"criticality\":\"TIER_0\",\"fallbackAvailable\":false}],\"downstreamServices\":14,\"downstreamDepth\":4,\"regionsAffected\":[{\"region\":\"us-east-1\",\"usersInRegion\":145000,\"trafficPercent\":62.5}],\"customerTierImpact\":[{\"tier\":\"ENTERPRISE\",\"usersAffected\":1200,\"revenueAtRiskUSDPerHour\":45000.0,\"slaBreachRisk\":\"CRITICAL\"}],\"revenueAtRiskUSDPerHour\":125000.0,\"dataLossRisk\":\"MEDIUM\"},\"dependencyGraph\":{\"nodes\":[{\"serviceName\":\"payment-processor\",\"tier\":\"TARGET\",\"estimatedImpactPercent\":100.0}],\"edges\":[{\"from\":\"checkout-service\",\"to\":\"payment-processor\",\"callVolumePerMinute\":4200,\"hasFallback\":false}]},\"recommendations\":{\"recommendedCanaryPercent\":2,\"rollbackTriggers\":[{\"metric\":\"error_rate_pct\",\"threshold\":1.0,\"windowSeconds\":60,\"action\":\"AUTO_ROLLBACK\"}],\"deployWindow\":{\"recommendedStart\":\"2026-11-05T02:00:00Z\",\"recommendedEnd\":\"2026-11-05T06:00:00Z\",\"reason\":\"Lowest traffic window; 90% less user impact than peak.\"},\"requiresApproval\":true,\"requiredApprovers\":[\"vp-engineering@forgesphere.example.com\",\"ciso@forgesphere.example.com\"],\"preDeployChecks\":[\"Contract Chronicle verification passed\",\"Shadow Mirror 24h with 10% traffic\",\"Rollback Commander ready with previous version\"],\"warningNotes\":[\"Enterprise customers use /charge exclusively — SLA impact is severe.\",\"No fallback path exists in checkout-service; cascade risk is high.\"]},\"aiSummary\":\"HIGH risk change. If this fails at 5% error rate during peak, 245K users and $125K/hour revenue are at risk. Enterprise tier (1200 users) has no fallback. Recommendation: 2% canary at 2 AM, auto-rollback at 1% error rate, requires VP+ approval.\",\"auditReference\":\"audit://blast-radius/analysis-9c8f1a3b\"}"
+    } ]
+  }, {
+    "name" : "POST /blast-radius/{analysisId}/simulate",
+    "request" : {
+      "method" : "POST",
+      "header" : [ {
+        "key" : "Accept",
+        "value" : "application/json"
+      }, {
+        "key" : "Content-Type",
+        "value" : "application/json"
+      }, {
+        "key" : "x-user-email",
+        "value" : "{{userEmail}}"
+      } ],
+      "url" : {
+        "raw" : "{{mockBaseUrl}}/blast-radius/{analysisId}/simulate"
+      },
+      "body" : {
+        "mode" : "raw",
+        "raw" : "{\"scenarios\":[{\"scenarioName\":\"5% error rate at peak\",\"failureMode\":\"ERROR_RATE\",\"errorRatePercent\":5.0,\"latencyIncreaseMs\":500,\"timeOfDay\":\"PEAK\",\"durationMinutes\":15}],\"autoRollbackThresholds\":{\"errorRatePercent\":2.0,\"latencyP99Ms\":1000,\"customerComplaintsPerMinute\":10}}",
+        "options" : {
+          "raw" : {
+            "language" : "json"
+          }
+        }
+      }
+    },
+    "response" : [ {
+      "name" : "Mock 200",
+      "code" : 200,
+      "status" : "OK",
+      "header" : [ {
+        "key" : "Content-Type",
+        "value" : "application/json"
+      } ],
+      "body" : "{\"simulationId\":\"b1a2c3d4-e5f6-7890-1234-567890abcdef\",\"analysisId\":\"9c8f1a3b-6d7e-4a12-8f5e-123456789abc\",\"generatedAt\":\"2024-01-01T00:00:00Z\",\"scenarios\":[{\"scenarioName\":\"5% error rate at peak\",\"failureMode\":\"ERROR_RATE\",\"timeOfDay\":\"PEAK\",\"durationMinutes\":15,\"userImpact\":{\"estimatedUsersAffected\":245000,\"errorsBeforeRollback\":4280,\"supportTicketsExpected\":342,\"socialMediaMentions\":48},\"revenueImpact\":{\"lostRevenueUSD\":31250.0,\"compensationCostUSD\":8500.0,\"slaCreditsOwedUSD\":15000.0,\"totalCostUSD\":54750.0},\"recoverability\":{\"autoRollbackPossible\":true,\"estimatedRecoveryMinutes\":8,\"requiresManualIntervention\":false,\"dataLossPossible\":false},\"cascadeRisk\":[\"checkout-service\",\"order-service\",\"notification-service\"],\"verdict\":\"UNACCEPTABLE\"}],\"overallRecommendation\":{\"proceed\":false,\"reasoning\":\"All scenarios exceed acceptable revenue loss ($50K threshold). Recommend splitting the change into smaller increments or deploying in a dedicated maintenance window with 1% canary.\",\"alternativeApproach\":\"Deploy as a deprecation first (keep discount_code, add discount_v2), then remove in a follow-up release.\",\"suggestedApprovalRequirements\":[\"VP Engineering\",\"CISO\",\"Customer Success Lead\"]},\"auditReference\":\"audit://blast-radius/simulation-b1a2c3d4\"}"
+    } ]
+  } ]
+}
