@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>ForgeCatalog | Blast Radius Calculator API</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:," />
+    <style>
+      body { margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+
+      #forgecatalog-topbar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 24px;
+        background: #1b1033;
+        color: #fff;
+        border-bottom: 3px solid #7c3aed;
+      }
+      #forgecatalog-topbar .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 700;
+        font-size: 18px;
+        letter-spacing: 0.3px;
+      }
+      #forgecatalog-topbar .brand .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #7c3aed;
+        box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.25);
+      }
+      #forgecatalog-topbar .spacer { flex: 1; }
+      #forgecatalog-topbar a {
+        color: #cbb6ff;
+        text-decoration: none;
+        font-size: 13px;
+        padding: 6px 10px;
+        border-radius: 6px;
+      }
+      #forgecatalog-topbar a:hover { background: rgba(255,255,255,0.08); color: #fff; }
+    </style>
+  </head>
+  <body>
+    <div id="forgecatalog-topbar">
+      <div class="brand"><span class="dot"></span>ForgeCatalog</div>
+      <div class="spacer"></div>
+      <a href="/v3/api-docs" target="_blank">Raw Spec (JSON)</a>
+    </div>
+
+    <redoc spec-url="/v3/api-docs"
+           theme='{
+             "colors": { "primary": { "main": "#7c3aed" } },
+             "typography": { "fontFamily": "Inter, sans-serif", "headings": { "fontFamily": "Inter, sans-serif" } },
+             "sidebar": { "backgroundColor": "#1b1033", "textColor": "#ffffff" }
+           }'>
+    </redoc>
+    <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"></script>
+  </body>
+</html>

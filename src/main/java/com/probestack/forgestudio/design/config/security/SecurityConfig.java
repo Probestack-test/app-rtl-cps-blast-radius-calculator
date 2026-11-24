@@ -74,7 +74,9 @@ public class SecurityConfig {
             "/actuator/loggers/**",
             "/swagger-ui.html",
             "/swagger-ui/**",
-            "/v3/api-docs/**"
+            "/v3/api-docs",
+            "/v3/api-docs/**",
+            "/forgecatalog-ui/**"
     };
 
     /**
