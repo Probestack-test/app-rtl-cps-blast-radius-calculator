@@ -76,7 +76,9 @@ public class SecurityConfig {
             "/swagger-ui/**",
             "/v3/api-docs",
             "/v3/api-docs/**",
-            "/forgecatalog-ui/**"
+            "/forgecatalog-ui/**",
+            "/forgecatalog-ui-v2/**",
+            "/forgecatalog-ui-v3/**"
     };
 
     /**

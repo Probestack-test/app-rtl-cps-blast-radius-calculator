@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="Interactive reference for the Blast Radius Calculator API." />
-    <meta name="theme-color" content="#171c1f" />
+    <meta name="theme-color" content="#ffffff" />
     <title>Blast Radius Calculator | API Reference</title>
     <script>
       (function () {
@@ -30,6 +30,14 @@
         --navy-soft: #252c30;
         --accent: #b85d12;
         --accent-dark: #8f4308;
+        --header-bg: #ffffff;
+        --header-hover: #f1f5f9;
+        --header-text: #172033;
+        --header-muted: #64748b;
+        --header-border: #aebbc9;
+        --header-divider: #d5dde7;
+        --header-icon: #8f4308;
+        --header-shadow: rgba(15, 23, 42, 0.12);
       }
 
       :root[data-theme="dark"] {
@@ -41,6 +49,14 @@
         --canvas: #111619;
         --accent: #df7924;
         --accent-dark: #ef984c;
+        --header-bg: #171c1f;
+        --header-hover: #252c30;
+        --header-text: #f8fafc;
+        --header-muted: #b7c3d4;
+        --header-border: #52617a;
+        --header-divider: #3a4960;
+        --header-icon: #f4bd70;
+        --header-shadow: rgba(0, 0, 0, 0.28);
       }
 
       * { box-sizing: border-box; }
@@ -75,16 +91,17 @@
         align-items: center;
         gap: 18px;
         padding: 0 32px;
-        background: var(--navy);
+        background: var(--header-bg);
         border-bottom: 3px solid #b85d12;
-        box-shadow: 0 8px 24px rgba(15, 27, 45, 0.16);
+        box-shadow: 0 8px 24px var(--header-shadow);
+        transition: background-color 180ms ease, box-shadow 180ms ease;
       }
       .brand {
         display: inline-flex;
         align-items: center;
         gap: 11px;
         min-width: max-content;
-        color: #fff;
+        color: var(--header-text);
         text-decoration: none;
       }
       .brand-logo-window {
@@ -114,11 +131,11 @@
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
       }
-      .brand-section { margin-top: 4px; color: #b7c3d4; font-size: 12px; font-weight: 600; }
-      .header-divider { width: 1px; height: 30px; background: #3a4960; }
+      .brand-section { margin-top: 4px; color: var(--header-muted); font-size: 12px; font-weight: 600; }
+      .header-divider { width: 1px; height: 30px; background: var(--header-divider); }
       .service-name {
         overflow: hidden;
-        color: #e8edf4;
+        color: var(--header-text);
         font-size: 14px;
         font-weight: 650;
         text-overflow: ellipsis;
@@ -131,21 +148,21 @@
         height: 40px;
         padding: 0;
         place-items: center;
-        border: 1px solid #52617a;
+        border: 1px solid var(--header-border);
         border-radius: 8px;
         background: transparent;
-        color: #f4bd70;
+        color: var(--header-icon);
         cursor: pointer;
         transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
       }
-      .theme-toggle:hover { border-color: #8390a3; background: var(--navy-soft); }
+      .theme-toggle:hover { border-color: var(--accent); background: var(--header-hover); }
       .theme-toggle:active { transform: scale(0.94); }
       .theme-toggle:focus-visible { outline: 3px solid #60a5fa; outline-offset: 3px; }
       .theme-icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; }
       .theme-icon-sun { display: none; }
       :root[data-theme="dark"] .theme-icon-sun { display: block; }
       :root[data-theme="dark"] .theme-icon-moon { display: none; }
-      .status { display: inline-flex; align-items: center; gap: 7px; color: #d9e3ef; font-size: 13px; font-weight: 600; }
+      .status { display: inline-flex; align-items: center; gap: 7px; color: var(--header-muted); font-size: 13px; font-weight: 650; }
       .status-dot {
         width: 8px;
         height: 8px;
@@ -158,15 +175,15 @@
         min-height: 38px;
         align-items: center;
         padding: 0 14px;
-        border: 1px solid #52617a;
+        border: 1px solid var(--header-border);
         border-radius: 7px;
-        color: #fff;
+        color: var(--header-text);
         font-size: 13px;
         font-weight: 700;
         text-decoration: none;
         transition: background 160ms ease, border-color 160ms ease;
       }
-      .spec-link:hover { border-color: #8390a3; background: var(--navy-soft); }
+      .spec-link:hover { border-color: var(--accent); background: var(--header-hover); }
       .spec-link:focus-visible, .brand:focus-visible { outline: 3px solid #60a5fa; outline-offset: 3px; }
 
       .page-intro {
@@ -496,7 +513,7 @@
           toggle.setAttribute("aria-pressed", String(isDark));
           toggle.setAttribute("aria-label", isDark ? "Switch to light theme" : "Switch to dark theme");
           toggle.setAttribute("title", isDark ? "Switch to light theme" : "Switch to dark theme");
-          if (themeColor) themeColor.setAttribute("content", isDark ? "#111619" : "#171c1f");
+          if (themeColor) themeColor.setAttribute("content", isDark ? "#171c1f" : "#ffffff");
         }
 
         function setTheme(theme, savePreference) {
