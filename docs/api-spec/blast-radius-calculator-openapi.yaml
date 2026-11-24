@@ -1,462 +1,406 @@
-openapi: 3.0.3
+openapi: 3.1.0
 info:
-  contact:
-    email: release-eng@forgesphere.example.com
-    name: ForgeSphere Release Engineering
-  description: "Pre-deployment impact analysis engine. Before a change reaches production,\
-    \ \ncalculates exactly how many users, revenue, regions, and downstream services\
-    \ \nwould be affected if it goes wrong. Uses the service dependency graph, live\
-    \ \ntraffic patterns, customer tiers, and revenue attribution to answer the \n\
-    question every release manager asks: \"What's the worst-case scenario?\"\nProvides\
-    \ data-driven recommendations for canary percentage, rollback \ntriggers, and\
-    \ deploy timing.\n"
   title: Blast Radius Calculator
+  description: "Pre-deployment impact analysis engine. Before a change reaches production,\
+    \  calculates exactly how many users, revenue, regions, and downstream services\
+    \  would be affected if it goes wrong. Uses the service dependency graph, live\
+    \  traffic patterns, customer tiers, and revenue attribution to answer the  question\
+    \ every release manager asks: \"What's the worst-case scenario?\" Provides data-driven\
+    \ recommendations for canary percentage, rollback  triggers, and deploy timing. "
+  contact:
+    name: ForgeSphere Release Engineering
+    email: release-eng@forgesphere.example.com
   version: 1.0.0
 servers:
-- description: Production Server
-  url: https://blastradius.forgesphere.lightning.com/v1
-- description: Local Development Server
-  url: http://localhost:8146/v1
-security:
-- bearerAuth: []
+- url: http://127.0.0.1:18080
+  description: Generated server url
 tags:
-- description: Analyze change impact before deployment.
-  name: Blast Radius
+- name: Blast Radius
+  description: Analyze change impact before deployment.
 paths:
-  /blast-radius:
+  /actuator/health:
     get:
-      description: "Returns a paginated list of previous blast radius analyses. Used\
-        \ by \nrelease managers to track deploy risk over time and by auditors to\
-        \ \nverify that high-impact changes were reviewed with proper caution.\n"
+      tags:
+      - Health
+      summary: Health
+      operationId: getHealth
+      responses:
+        "200":
+          description: Monitoring data returned successfully
+          content:
+            application/json:
+              schema:
+                type: object
+  /actuator/health/liveness:
+    get:
+      tags:
+      - Health
+      summary: Liveness
+      operationId: getLiveness
+      responses:
+        "200":
+          description: Monitoring data returned successfully
+          content:
+            application/json:
+              schema:
+                type: object
+  /actuator/health/readiness:
+    get:
+      tags:
+      - Health
+      summary: Readiness
+      operationId: getReadiness
+      responses:
+        "200":
+          description: Monitoring data returned successfully
+          content:
+            application/json:
+              schema:
+                type: object
+  /actuator/metrics:
+    get:
+      tags:
+      - Health
+      summary: Metrics
+      operationId: getMetrics
+      responses:
+        "200":
+          description: Monitoring data returned successfully
+          content:
+            application/json:
+              schema:
+                type: object
+  /actuator/prometheus:
+    get:
+      tags:
+      - Health
+      summary: Prometheus
+      operationId: getPrometheusMetrics
+      responses:
+        "200":
+          description: Prometheus metrics returned successfully
+          content:
+            text/plain:
+              schema:
+                type: string
+  /oauth2/token:
+    post:
+      tags:
+      - Security
+      summary: Get OAuth2 Token
+      description: Uses the OAuth 2.0 client credentials grant. Authenticate the client
+        with HTTP Basic credentials and submit grant_type=client_credentials.
+      operationId: getOAuth2Token
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                grant_type:
+                  type: string
+                  default: client_credentials
+                  description: OAuth 2.0 grant type
+                  enum:
+                  - client_credentials
+                scope:
+                  type: string
+                  description: Space-delimited scopes
+                  example: api.read api.write
+              required:
+              - grant_type
+        required: true
+      responses:
+        "200":
+          description: Access token issued successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  token_type:
+                    type: string
+                    example: Bearer
+                  expires_in:
+                    type: integer
+                    format: int32
+                    example: 3600
+                  scope:
+                    type: string
+                    example: api.read api.write
+        "400":
+          description: Invalid token request
+        "401":
+          description: Invalid client credentials
+  /v1/blast-radius:
+    get:
+      tags:
+      - Blast Radius
+      summary: List past blast radius analyses
+      description: 'Returns a paginated list of previous blast radius analyses. Used
+        by  release managers to track deploy risk over time and by auditors to  verify
+        that high-impact changes were reviewed with proper caution. '
       operationId: listBlastRadiusAnalyses
       parameters:
-      - description: Filter by target service.
-        example: payment-processor
-        explode: true
+      - name: targetService
         in: query
-        name: targetService
+        description: Filter by target service.
         required: false
         schema:
           type: string
-        style: form
-      - description: Filter by environment.
-        explode: true
+      - name: environment
         in: query
-        name: environment
+        description: Filter by environment.
         required: false
         schema:
-          enum:
-          - STAGING
-          - PRODUCTION
           type: string
-        style: form
-      - description: Filter by computed risk level.
-        example: HIGH
-        explode: true
+      - name: riskLevel
         in: query
-        name: riskLevel
+        description: Filter by computed risk level.
         required: false
         schema:
-          enum:
-          - MINIMAL
-          - LOW
-          - MEDIUM
-          - HIGH
-          - CATASTROPHIC
           type: string
-        style: form
-      - description: Filter by change type.
-        explode: true
+      - name: changeType
         in: query
-        name: changeType
+        description: Filter by change type.
         required: false
         schema:
-          enum:
-          - FEATURE
-          - BUGFIX
-          - HOTFIX
-          - CONFIG_CHANGE
-          - INFRA_CHANGE
-          - DEPENDENCY_UPGRADE
-          - DATABASE_MIGRATION
-          - API_CONTRACT_CHANGE
-          - ROLLBACK
           type: string
-        style: form
-      - description: Only include analyses that required approval.
-        explode: true
+      - name: requiresApproval
         in: query
-        name: requiresApproval
+        description: Only include analyses that required approval.
         required: false
         schema:
           type: boolean
-        style: form
-      - description: Only include analyses after this time.
-        explode: true
+      - name: fromDate
         in: query
-        name: fromDate
+        description: Only include analyses after this time.
         required: false
         schema:
-          format: date-time
           type: string
-        style: form
-      - description: Only include analyses before this time.
-        explode: true
-        in: query
-        name: toDate
-        required: false
-        schema:
           format: date-time
-          type: string
-        style: form
-      - description: Page number (zero-based).
-        explode: true
+      - name: toDate
         in: query
-        name: page
+        description: Only include analyses before this time.
         required: false
         schema:
-          default: 0
+          type: string
+          format: date-time
+      - name: page
+        in: query
+        description: Page number (zero-based).
+        required: false
+        schema:
           type: integer
-        style: form
-      - description: Number of items per page.
-        explode: true
+          format: int32
+          default: 0
+      - name: size
         in: query
-        name: size
+        description: Number of items per page.
         required: false
         schema:
+          type: integer
+          format: int32
           default: 20
           maximum: 100
-          type: integer
-        style: form
       responses:
         "200":
+          description: List of analyses retrieved successfully.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/AnalysisList"
-          description: List of analyses retrieved successfully.
         "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
           description: Invalid request payload or missing required fields.
-        "500":
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        "500":
           description: Internal server error.
-      summary: List past blast radius analyses
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+    post:
       tags:
       - Blast Radius
-      x-accepts: application/json
-      x-tags:
-      - tag: Blast Radius
-    post:
+      summary: Analyze the blast radius of a proposed production change
       description: "Accepts a change descriptor (target service, version, change type)\
-        \ \nand calculates the blast radius — what happens if this change breaks?\
-        \ \nTraces the full dependency graph upstream and downstream, matches \ntraffic\
-        \ to customer tiers, and computes user/revenue/regional impact. \nReturns\
-        \ recommended canary percentage, rollback triggers, and deploy \nwindow.\n"
+        \  and calculates the blast radius — what happens if this change breaks? \
+        \ Traces the full dependency graph upstream and downstream, matches  traffic\
+        \ to customer tiers, and computes user/revenue/regional impact.  Returns recommended\
+        \ canary percentage, rollback triggers, and deploy  window. "
       operationId: analyzeBlastRadius
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/analyzeBlastRadius_request"
+              $ref: "#/components/schemas/AnalyzeBlastRadiusRequest"
         required: true
       responses:
         "202":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/BlastRadiusAnalysis"
           description: Blast radius analysis accepted and running.
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-          description: Invalid request payload or missing required fields.
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-          description: Target service not found in dependency graph.
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-          description: Internal server error.
-      summary: Analyze the blast radius of a proposed production change
-      tags:
-      - Blast Radius
-      x-content-type: application/json
-      x-accepts: application/json
-      x-tags:
-      - tag: Blast Radius
-  /blast-radius/{analysisId}:
-    get:
-      description: "Returns the complete blast radius report — every downstream consumer,\
-        \ \nevery affected user tier, revenue attribution, regional impact, and \n\
-        the full recommendation set. The most important output is the \n`recommendations`\
-        \ object: canary percentage, rollback triggers, \ndeploy window, and approval\
-        \ requirements.\n"
-      operationId: getBlastRadiusAnalysis
-      parameters:
-      - description: Unique identifier of the analysis.
-        example: 9c8f1a3b-6d7e-4a12-8f5e-123456789abc
-        explode: false
-        in: path
-        name: analysisId
-        required: true
-        schema:
-          format: uuid
-          type: string
-        style: simple
-      - description: Include the full dependency graph.
-        example: true
-        explode: true
-        in: query
-        name: includeDependencyGraph
-        required: false
-        schema:
-          default: true
-          type: boolean
-        style: form
-      - description: Include per-tier revenue impact.
-        example: true
-        explode: true
-        in: query
-        name: includeRevenueBreakdown
-        required: false
-        schema:
-          default: true
-          type: boolean
-        style: form
-      responses:
-        "200":
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/BlastRadiusAnalysis"
-          description: Blast radius analysis retrieved successfully.
+        "400":
+          description: Invalid request payload or missing required fields.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "404":
+          description: Target service not found in dependency graph.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-          description: Analysis ID or service not found.
         "500":
+          description: Internal server error.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-          description: Internal server error.
-      summary: Get detailed blast radius analysis
+      security:
+      - bearerAuth: []
+  /v1/blast-radius/{analysisId}/simulate:
+    post:
       tags:
       - Blast Radius
-      x-accepts: application/json
-      x-tags:
-      - tag: Blast Radius
-  /blast-radius/{analysisId}/simulate:
-    post:
+      summary: Simulate failure scenarios for the analyzed change
       description: "Runs what-if simulations against the blast radius analysis. Answers\
-        \ \nquestions like: \"What happens if this change causes a 5% error rate?\"\
-        , \n\"What if it breaks at peak traffic?\", \"What if a downstream service\
-        \ \ntimes out?\" Returns quantified impact for each scenario plus \nautomated\
-        \ rollback recommendations.\n"
+        \  questions like: \"What happens if this change causes a 5% error rate?\"\
+        ,  \"What if it breaks at peak traffic?\", \"What if a downstream service\
+        \  times out?\" Returns quantified impact for each scenario plus  automated\
+        \ rollback recommendations. "
       operationId: simulateFailures
       parameters:
-      - description: Unique identifier of the blast radius analysis.
-        example: 9c8f1a3b-6d7e-4a12-8f5e-123456789abc
-        explode: false
+      - name: analysisId
         in: path
-        name: analysisId
+        description: Unique identifier of the blast radius analysis.
         required: true
         schema:
-          format: uuid
           type: string
-        style: simple
+          format: uuid
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/simulateFailures_request"
+              $ref: "#/components/schemas/SimulateFailuresRequest"
         required: true
       responses:
         "200":
+          description: Simulation results with quantified impact.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/FailureSimulation"
-          description: Simulation results with quantified impact.
         "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
           description: Invalid request payload or missing required fields.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
           description: Analysis ID or service not found.
-        "500":
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        "500":
           description: Internal server error.
-      summary: Simulate failure scenarios for the analyzed change
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+  /v1/blast-radius/{analysisId}:
+    get:
       tags:
       - Blast Radius
-      x-content-type: application/json
-      x-accepts: application/json
-      x-tags:
-      - tag: Blast Radius
+      summary: Get detailed blast radius analysis
+      description: "Returns the complete blast radius report — every downstream consumer,\
+        \  every affected user tier, revenue attribution, regional impact, and  the\
+        \ full recommendation set. The most important output is the  `recommendations`\
+        \ object: canary percentage, rollback triggers,  deploy window, and approval\
+        \ requirements. "
+      operationId: getBlastRadiusAnalysis
+      parameters:
+      - name: analysisId
+        in: path
+        description: Unique identifier of the analysis.
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: includeDependencyGraph
+        in: query
+        description: Include the full dependency graph.
+        required: false
+        schema:
+          type: boolean
+          default: true
+      - name: includeRevenueBreakdown
+        in: query
+        description: Include per-tier revenue impact.
+        required: false
+        schema:
+          type: boolean
+          default: true
+      responses:
+        "200":
+          description: Blast radius analysis retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BlastRadiusAnalysis"
+        "404":
+          description: Analysis ID or service not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
 components:
-  responses:
-    BadRequest:
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/ErrorResponse"
-      description: Invalid request payload or missing required fields.
-    NotFound:
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/ErrorResponse"
-      description: Analysis ID or service not found.
-    InternalError:
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/ErrorResponse"
-      description: Internal server error.
   schemas:
     BlastRadiusAnalysis:
-      example:
-        auditReference: audit://blast-radius/analysis-9c8f1a3b
-        completedAt: 2000-01-23T04:56:07.000+00:00
-        riskLevel: HIGH
-        changeType: API_CONTRACT_CHANGE
-        impact:
-          usersAffectedPercent: 18.5
-          downstreamServices: 14
-          regionsAffected:
-          - trafficPercent: 62.5
-            region: us-east-1
-            usersInRegion: 145000
-          - trafficPercent: 62.5
-            region: us-east-1
-            usersInRegion: 145000
-          customerTierImpact:
-          - tier: ENTERPRISE
-            slaBreachRisk: CRITICAL
-            revenueAtRiskUSDPerHour: 45000.0
-            usersAffected: 1200
-          - tier: ENTERPRISE
-            slaBreachRisk: CRITICAL
-            revenueAtRiskUSDPerHour: 45000.0
-            usersAffected: 1200
-          directConsumers:
-          - fallbackAvailable: false
-            criticality: TIER_0
-            serviceName: checkout-service
-            trafficSharePercent: 42.5
-          - fallbackAvailable: false
-            criticality: TIER_0
-            serviceName: checkout-service
-            trafficSharePercent: 42.5
-          downstreamDepth: 4
-          revenueAtRiskUSDPerHour: 125000.0
-          dataLossRisk: MEDIUM
-          usersAffected: 245000
-        recommendations:
-          deployWindow:
-            recommendedEnd: 2026-11-05T06:00:00Z
-            recommendedStart: 2026-11-05T02:00:00Z
-            reason: Lowest traffic window; 90% less user impact than peak.
-          recommendedCanaryPercent: 2
-          rollbackTriggers:
-          - metric: error_rate_pct
-            windowSeconds: 60
-            action: AUTO_ROLLBACK
-            threshold: 1.0
-          - metric: error_rate_pct
-            windowSeconds: 60
-            action: AUTO_ROLLBACK
-            threshold: 1.0
-          preDeployChecks:
-          - Contract Chronicle verification passed
-          - Shadow Mirror 24h with 10% traffic
-          - Rollback Commander ready with previous version
-          warningNotes:
-          - Enterprise customers use /charge exclusively — SLA impact is severe.
-          - No fallback path exists in checkout-service; cascade risk is high.
-          requiresApproval: true
-          requiredApprovers:
-          - vp-engineering@forgesphere.example.com
-          - ciso@forgesphere.example.com
-        currentVersion: v2.4.1
-        targetVersion: v2.5.0
-        requestedBy: amit.kumar@forgesphere.example.com
-        environment: PRODUCTION
-        targetService: payment-processor
-        dependencyGraph:
-          nodes:
-          - tier: TARGET
-            estimatedImpactPercent: 100.0
-            serviceName: payment-processor
-          - tier: TARGET
-            estimatedImpactPercent: 100.0
-            serviceName: payment-processor
-          edges:
-          - callVolumePerMinute: 4200
-            hasFallback: false
-            from: checkout-service
-            to: payment-processor
-          - callVolumePerMinute: 4200
-            hasFallback: false
-            from: checkout-service
-            to: payment-processor
-        aiSummary: "HIGH risk change. If this fails at 5% error rate during peak,\
-          \ 245K users and $125K/hour revenue are at risk. Enterprise tier (1200 users)\
-          \ has no fallback. Recommendation: 2% canary at 2 AM, auto-rollback at 1%\
-          \ error rate, requires VP+ approval."
-        analysisId: 9c8f1a3b-6d7e-4a12-8f5e-123456789abc
-        riskScore: 78
-        submittedAt: 2000-01-23T04:56:07.000+00:00
-        changeSummary: Removing discount_code field from /charge request; adding discount_v2
-          field.
-        status: COMPLETED
+      type: object
       properties:
         analysisId:
-          example: 9c8f1a3b-6d7e-4a12-8f5e-123456789abc
+          type: string
           format: uuid
-          type: string
+          example: 9c8f1a3b-6d7e-4a12-8f5e-123456789abc
         targetService:
+          type: string
           example: payment-processor
-          type: string
         targetVersion:
+          type: string
           example: v2.5.0
-          type: string
         currentVersion:
-          example: v2.4.1
           type: string
+          example: v2.4.1
         environment:
+          type: string
           enum:
           - STAGING
           - PRODUCTION
           example: PRODUCTION
-          type: string
         changeType:
+          type: string
           enum:
           - FEATURE
           - BUGFIX
@@ -468,12 +412,12 @@ components:
           - API_CONTRACT_CHANGE
           - ROLLBACK
           example: API_CONTRACT_CHANGE
-          type: string
         changeSummary:
+          type: string
           example: Removing discount_code field from /charge request; adding discount_v2
             field.
-          type: string
         status:
+          type: string
           enum:
           - QUEUED
           - TRACING_DEPENDENCIES
@@ -482,8 +426,8 @@ components:
           - COMPLETED
           - FAILED
           example: COMPLETED
-          type: string
         riskLevel:
+          type: string
           description: Overall computed risk.
           enum:
           - MINIMAL
@@ -492,38 +436,37 @@ components:
           - HIGH
           - CATASTROPHIC
           example: HIGH
-          type: string
         riskScore:
+          type: number
           description: Numeric risk score.
           example: 78
           maximum: 100
           minimum: 0
-          type: number
         submittedAt:
-          format: date-time
           type: string
+          format: date-time
         completedAt:
+          type: string
           format: date-time
-          type: string
         requestedBy:
-          example: amit.kumar@forgesphere.example.com
           type: string
+          example: amit.kumar@forgesphere.example.com
         impact:
-          $ref: "#/components/schemas/BlastRadiusAnalysis_impact"
+          $ref: "#/components/schemas/BlastRadiusAnalysisImpact"
         dependencyGraph:
           $ref: "#/components/schemas/BlastRadiusAnalysis_dependencyGraph"
         recommendations:
-          $ref: "#/components/schemas/BlastRadiusAnalysis_recommendations"
+          $ref: "#/components/schemas/BlastRadiusAnalysisRecommendations"
         aiSummary:
+          type: string
           description: AI-generated plain-English summary.
           example: "HIGH risk change. If this fails at 5% error rate during peak,\
             \ 245K users and $125K/hour revenue are at risk. Enterprise tier (1200\
             \ users) has no fallback. Recommendation: 2% canary at 2 AM, auto-rollback\
             \ at 1% error rate, requires VP+ approval."
-          type: string
         auditReference:
-          example: audit://blast-radius/analysis-9c8f1a3b
           type: string
+          example: audit://blast-radius/analysis-9c8f1a3b
       required:
       - analysisId
       - environment
@@ -534,376 +477,313 @@ components:
       - submittedAt
       - targetService
       - targetVersion
+    BlastRadiusAnalysisDependencyGraphEdgesInner:
       type: object
-    AnalysisList:
-      example:
-        summary:
-          lowRiskCount: 72
-          highRiskCount: 22
-          minimalRiskCount: 98
-          totalAnalyses: 247
-          catastrophicCount: 7
-          totalRevenueAtRiskUSD: 845000.0
-          mediumRiskCount: 48
-        size: 20
-        totalPages: 13
-        page: 0
-        content:
-        - auditReference: audit://blast-radius/analysis-9c8f1a3b
-          completedAt: 2000-01-23T04:56:07.000+00:00
-          riskLevel: HIGH
-          changeType: API_CONTRACT_CHANGE
-          impact:
-            usersAffectedPercent: 18.5
-            downstreamServices: 14
-            regionsAffected:
-            - trafficPercent: 62.5
-              region: us-east-1
-              usersInRegion: 145000
-            - trafficPercent: 62.5
-              region: us-east-1
-              usersInRegion: 145000
-            customerTierImpact:
-            - tier: ENTERPRISE
-              slaBreachRisk: CRITICAL
-              revenueAtRiskUSDPerHour: 45000.0
-              usersAffected: 1200
-            - tier: ENTERPRISE
-              slaBreachRisk: CRITICAL
-              revenueAtRiskUSDPerHour: 45000.0
-              usersAffected: 1200
-            directConsumers:
-            - fallbackAvailable: false
-              criticality: TIER_0
-              serviceName: checkout-service
-              trafficSharePercent: 42.5
-            - fallbackAvailable: false
-              criticality: TIER_0
-              serviceName: checkout-service
-              trafficSharePercent: 42.5
-            downstreamDepth: 4
-            revenueAtRiskUSDPerHour: 125000.0
-            dataLossRisk: MEDIUM
-            usersAffected: 245000
-          recommendations:
-            deployWindow:
-              recommendedEnd: 2026-11-05T06:00:00Z
-              recommendedStart: 2026-11-05T02:00:00Z
-              reason: Lowest traffic window; 90% less user impact than peak.
-            recommendedCanaryPercent: 2
-            rollbackTriggers:
-            - metric: error_rate_pct
-              windowSeconds: 60
-              action: AUTO_ROLLBACK
-              threshold: 1.0
-            - metric: error_rate_pct
-              windowSeconds: 60
-              action: AUTO_ROLLBACK
-              threshold: 1.0
-            preDeployChecks:
-            - Contract Chronicle verification passed
-            - Shadow Mirror 24h with 10% traffic
-            - Rollback Commander ready with previous version
-            warningNotes:
-            - Enterprise customers use /charge exclusively — SLA impact is severe.
-            - No fallback path exists in checkout-service; cascade risk is high.
-            requiresApproval: true
-            requiredApprovers:
-            - vp-engineering@forgesphere.example.com
-            - ciso@forgesphere.example.com
-          currentVersion: v2.4.1
-          targetVersion: v2.5.0
-          requestedBy: amit.kumar@forgesphere.example.com
-          environment: PRODUCTION
-          targetService: payment-processor
-          dependencyGraph:
-            nodes:
-            - tier: TARGET
-              estimatedImpactPercent: 100.0
-              serviceName: payment-processor
-            - tier: TARGET
-              estimatedImpactPercent: 100.0
-              serviceName: payment-processor
-            edges:
-            - callVolumePerMinute: 4200
-              hasFallback: false
-              from: checkout-service
-              to: payment-processor
-            - callVolumePerMinute: 4200
-              hasFallback: false
-              from: checkout-service
-              to: payment-processor
-          aiSummary: "HIGH risk change. If this fails at 5% error rate during peak,\
-            \ 245K users and $125K/hour revenue are at risk. Enterprise tier (1200\
-            \ users) has no fallback. Recommendation: 2% canary at 2 AM, auto-rollback\
-            \ at 1% error rate, requires VP+ approval."
-          analysisId: 9c8f1a3b-6d7e-4a12-8f5e-123456789abc
-          riskScore: 78
-          submittedAt: 2000-01-23T04:56:07.000+00:00
-          changeSummary: Removing discount_code field from /charge request; adding
-            discount_v2 field.
-          status: COMPLETED
-        - auditReference: audit://blast-radius/analysis-9c8f1a3b
-          completedAt: 2000-01-23T04:56:07.000+00:00
-          riskLevel: HIGH
-          changeType: API_CONTRACT_CHANGE
-          impact:
-            usersAffectedPercent: 18.5
-            downstreamServices: 14
-            regionsAffected:
-            - trafficPercent: 62.5
-              region: us-east-1
-              usersInRegion: 145000
-            - trafficPercent: 62.5
-              region: us-east-1
-              usersInRegion: 145000
-            customerTierImpact:
-            - tier: ENTERPRISE
-              slaBreachRisk: CRITICAL
-              revenueAtRiskUSDPerHour: 45000.0
-              usersAffected: 1200
-            - tier: ENTERPRISE
-              slaBreachRisk: CRITICAL
-              revenueAtRiskUSDPerHour: 45000.0
-              usersAffected: 1200
-            directConsumers:
-            - fallbackAvailable: false
-              criticality: TIER_0
-              serviceName: checkout-service
-              trafficSharePercent: 42.5
-            - fallbackAvailable: false
-              criticality: TIER_0
-              serviceName: checkout-service
-              trafficSharePercent: 42.5
-            downstreamDepth: 4
-            revenueAtRiskUSDPerHour: 125000.0
-            dataLossRisk: MEDIUM
-            usersAffected: 245000
-          recommendations:
-            deployWindow:
-              recommendedEnd: 2026-11-05T06:00:00Z
-              recommendedStart: 2026-11-05T02:00:00Z
-              reason: Lowest traffic window; 90% less user impact than peak.
-            recommendedCanaryPercent: 2
-            rollbackTriggers:
-            - metric: error_rate_pct
-              windowSeconds: 60
-              action: AUTO_ROLLBACK
-              threshold: 1.0
-            - metric: error_rate_pct
-              windowSeconds: 60
-              action: AUTO_ROLLBACK
-              threshold: 1.0
-            preDeployChecks:
-            - Contract Chronicle verification passed
-            - Shadow Mirror 24h with 10% traffic
-            - Rollback Commander ready with previous version
-            warningNotes:
-            - Enterprise customers use /charge exclusively — SLA impact is severe.
-            - No fallback path exists in checkout-service; cascade risk is high.
-            requiresApproval: true
-            requiredApprovers:
-            - vp-engineering@forgesphere.example.com
-            - ciso@forgesphere.example.com
-          currentVersion: v2.4.1
-          targetVersion: v2.5.0
-          requestedBy: amit.kumar@forgesphere.example.com
-          environment: PRODUCTION
-          targetService: payment-processor
-          dependencyGraph:
-            nodes:
-            - tier: TARGET
-              estimatedImpactPercent: 100.0
-              serviceName: payment-processor
-            - tier: TARGET
-              estimatedImpactPercent: 100.0
-              serviceName: payment-processor
-            edges:
-            - callVolumePerMinute: 4200
-              hasFallback: false
-              from: checkout-service
-              to: payment-processor
-            - callVolumePerMinute: 4200
-              hasFallback: false
-              from: checkout-service
-              to: payment-processor
-          aiSummary: "HIGH risk change. If this fails at 5% error rate during peak,\
-            \ 245K users and $125K/hour revenue are at risk. Enterprise tier (1200\
-            \ users) has no fallback. Recommendation: 2% canary at 2 AM, auto-rollback\
-            \ at 1% error rate, requires VP+ approval."
-          analysisId: 9c8f1a3b-6d7e-4a12-8f5e-123456789abc
-          riskScore: 78
-          submittedAt: 2000-01-23T04:56:07.000+00:00
-          changeSummary: Removing discount_code field from /charge request; adding
-            discount_v2 field.
-          status: COMPLETED
-        totalElements: 247
       properties:
-        content:
-          items:
-            $ref: "#/components/schemas/BlastRadiusAnalysis"
-          type: array
-        totalElements:
-          example: 247
+        from:
+          type: string
+          example: checkout-service
+        to:
+          type: string
+          example: payment-processor
+        callVolumePerMinute:
           type: integer
-        totalPages:
-          example: 13
-          type: integer
-        page:
-          example: 0
-          type: integer
-        size:
-          example: 20
-          type: integer
-        summary:
-          $ref: "#/components/schemas/AnalysisList_summary"
-      required:
-      - content
-      - totalElements
-      - totalPages
+          format: int32
+          example: 4200
+        hasFallback:
+          type: boolean
+          example: false
+    BlastRadiusAnalysisDependencyGraphNodesInner:
       type: object
-    FailureSimulation:
-      example:
-        auditReference: audit://blast-radius/simulation-b1a2c3d4
-        generatedAt: 2000-01-23T04:56:07.000+00:00
-        analysisId: 9c8f1a3b-6d7e-4a12-8f5e-123456789abc
-        scenarios:
-        - userImpact:
-            estimatedUsersAffected: 245000
-            supportTicketsExpected: 342
-            errorsBeforeRollback: 4280
-            socialMediaMentions: 48
-          durationMinutes: 15
-          failureMode: ERROR_RATE
-          recoverability:
-            autoRollbackPossible: true
-            dataLossPossible: false
-            estimatedRecoveryMinutes: 8
-            requiresManualIntervention: false
-          verdict: UNACCEPTABLE
-          scenarioName: 5% error rate at peak
-          revenueImpact:
-            lostRevenueUSD: 31250.0
-            totalCostUSD: 54750.0
-            compensationCostUSD: 8500.0
-            slaCreditsOwedUSD: 15000.0
-          cascadeRisk:
-          - checkout-service
-          - order-service
-          - notification-service
-          timeOfDay: PEAK
-        - userImpact:
-            estimatedUsersAffected: 245000
-            supportTicketsExpected: 342
-            errorsBeforeRollback: 4280
-            socialMediaMentions: 48
-          durationMinutes: 15
-          failureMode: ERROR_RATE
-          recoverability:
-            autoRollbackPossible: true
-            dataLossPossible: false
-            estimatedRecoveryMinutes: 8
-            requiresManualIntervention: false
-          verdict: UNACCEPTABLE
-          scenarioName: 5% error rate at peak
-          revenueImpact:
-            lostRevenueUSD: 31250.0
-            totalCostUSD: 54750.0
-            compensationCostUSD: 8500.0
-            slaCreditsOwedUSD: 15000.0
-          cascadeRisk:
-          - checkout-service
-          - order-service
-          - notification-service
-          timeOfDay: PEAK
-        simulationId: b1a2c3d4-e5f6-7890-1234-567890abcdef
-        overallRecommendation:
-          proceed: false
-          suggestedApprovalRequirements:
-          - VP Engineering
-          - CISO
-          - Customer Success Lead
-          reasoning: All scenarios exceed acceptable revenue loss ($50K threshold).
-            Recommend splitting the change into smaller increments or deploying in
-            a dedicated maintenance window with 1% canary.
-          alternativeApproach: "Deploy as a deprecation first (keep discount_code,\
-            \ add discount_v2), then remove in a follow-up release."
       properties:
-        simulationId:
-          example: b1a2c3d4-e5f6-7890-1234-567890abcdef
-          format: uuid
+        serviceName:
           type: string
-        analysisId:
-          example: 9c8f1a3b-6d7e-4a12-8f5e-123456789abc
-          format: uuid
+          example: payment-processor
+        tier:
           type: string
-        generatedAt:
-          format: date-time
-          type: string
-        scenarios:
-          items:
-            $ref: "#/components/schemas/FailureSimulation_scenarios_inner"
-          type: array
-        overallRecommendation:
-          $ref: "#/components/schemas/FailureSimulation_overallRecommendation"
-        auditReference:
-          example: audit://blast-radius/simulation-b1a2c3d4
-          type: string
-      required:
-      - analysisId
-      - generatedAt
-      - overallRecommendation
-      - scenarios
-      - simulationId
+          enum:
+          - TARGET
+          - DIRECT_CONSUMER
+          - INDIRECT_CONSUMER
+          - DOWNSTREAM
+          example: TARGET
+        estimatedImpactPercent:
+          type: number
+          format: double
+          example: 100.0
+    BlastRadiusAnalysisImpact:
       type: object
+      properties:
+        usersAffected:
+          type: integer
+          format: int32
+          description: Estimated users hit if the change fails.
+          example: 245000
+        usersAffectedPercent:
+          type: number
+          format: double
+          description: Percentage of total user base.
+          example: 18.5
+        directConsumers:
+          type: array
+          description: Services that directly call the target service.
+          items:
+            $ref: "#/components/schemas/BlastRadiusAnalysisImpactDirectConsumersInner"
+        downstreamServices:
+          type: integer
+          format: int32
+          description: Total downstream services in the dependency chain.
+          example: 14
+        downstreamDepth:
+          type: integer
+          format: int32
+          description: Maximum depth of the dependency chain.
+          example: 4
+        regionsAffected:
+          type: array
+          description: Geographic regions impacted.
+          items:
+            $ref: "#/components/schemas/BlastRadiusAnalysisImpactRegionsAffectedInner"
+        customerTierImpact:
+          type: array
+          description: Impact broken down by customer tier.
+          items:
+            $ref: "#/components/schemas/BlastRadiusAnalysisImpactCustomerTierImpactInner"
+        revenueAtRiskUSDPerHour:
+          type: number
+          format: double
+          description: Total revenue at risk per hour.
+          example: 125000.0
+        dataLossRisk:
+          type: string
+          enum:
+          - NONE
+          - LOW
+          - MEDIUM
+          - HIGH
+          - CATASTROPHIC
+          example: MEDIUM
+      required:
+      - directConsumers
+      - downstreamServices
+      - regionsAffected
+      - usersAffected
+    BlastRadiusAnalysisImpactCustomerTierImpactInner:
+      type: object
+      properties:
+        tier:
+          type: string
+          enum:
+          - ENTERPRISE
+          - PRO
+          - FREE
+          - ANONYMOUS
+          example: ENTERPRISE
+        usersAffected:
+          type: integer
+          format: int32
+          example: 1200
+        revenueAtRiskUSDPerHour:
+          type: number
+          format: double
+          example: 45000.0
+        slaBreachRisk:
+          type: string
+          enum:
+          - LOW
+          - MEDIUM
+          - HIGH
+          - CRITICAL
+          example: CRITICAL
+    BlastRadiusAnalysisImpactDirectConsumersInner:
+      type: object
+      properties:
+        serviceName:
+          type: string
+          example: checkout-service
+        trafficSharePercent:
+          type: number
+          format: double
+          description: How much traffic this consumer sends.
+          example: 42.5
+        criticality:
+          type: string
+          enum:
+          - TIER_0
+          - TIER_1
+          - TIER_2
+          - TIER_3
+          example: TIER_0
+        fallbackAvailable:
+          type: boolean
+          description: Whether this consumer has a fallback path.
+          example: false
+      required:
+      - criticality
+      - serviceName
+      - trafficSharePercent
+    BlastRadiusAnalysisImpactRegionsAffectedInner:
+      type: object
+      properties:
+        region:
+          type: string
+          example: us-east-1
+        usersInRegion:
+          type: integer
+          format: int32
+          example: 145000
+        trafficPercent:
+          type: number
+          format: double
+          example: 62.5
+    BlastRadiusAnalysisRecommendations:
+      type: object
+      properties:
+        recommendedCanaryPercent:
+          type: integer
+          format: int32
+          description: Suggested initial canary traffic %.
+          example: 2
+          maximum: 100
+          minimum: 1
+        rollbackTriggers:
+          type: array
+          description: Metrics that should trigger automatic rollback.
+          items:
+            $ref: "#/components/schemas/BlastRadiusAnalysisRecommendationsRollbackTriggersInner"
+        deployWindow:
+          $ref: "#/components/schemas/BlastRadiusAnalysisRecommendationsDeployWindow"
+        requiresApproval:
+          type: boolean
+          example: true
+        requiredApprovers:
+          type: array
+          description: Who must approve before deploy.
+          example:
+          - vp-engineering@forgesphere.example.com
+          - ciso@forgesphere.example.com
+          items:
+            type: string
+        preDeployChecks:
+          type: array
+          description: Additional checks required before deploying.
+          example:
+          - Contract Chronicle verification passed
+          - Shadow Mirror 24h with 10% traffic
+          - Rollback Commander ready with previous version
+          items:
+            type: string
+        warningNotes:
+          type: array
+          example:
+          - Enterprise customers use /charge exclusively — SLA impact is severe.
+          - No fallback path exists in checkout-service; cascade risk is high.
+          items:
+            type: string
+      required:
+      - deployWindow
+      - recommendedCanaryPercent
+      - requiresApproval
+      - rollbackTriggers
+    BlastRadiusAnalysisRecommendationsDeployWindow:
+      type: object
+      properties:
+        recommendedStart:
+          type: string
+          example: 2026-11-05T02:00:00Z
+        recommendedEnd:
+          type: string
+          example: 2026-11-05T06:00:00Z
+        reason:
+          type: string
+          example: Lowest traffic window; 90% less user impact than peak.
+      required:
+      - reason
+      - recommendedEnd
+      - recommendedStart
+    BlastRadiusAnalysisRecommendationsRollbackTriggersInner:
+      type: object
+      properties:
+        metric:
+          type: string
+          example: error_rate_pct
+        threshold:
+          type: number
+          example: 1.0
+        windowSeconds:
+          type: integer
+          format: int32
+          example: 60
+        action:
+          type: string
+          enum:
+          - ALERT
+          - PAUSE_ROLLOUT
+          - AUTO_ROLLBACK
+          example: AUTO_ROLLBACK
+    BlastRadiusAnalysis_dependencyGraph:
+      type: object
+      description: Full dependency graph (if includeDependencyGraph=true).
+      properties:
+        nodes:
+          type: array
+          items:
+            $ref: "#/components/schemas/BlastRadiusAnalysisDependencyGraphNodesInner"
+        edges:
+          type: array
+          items:
+            $ref: "#/components/schemas/BlastRadiusAnalysisDependencyGraphEdgesInner"
     ErrorResponse:
+      type: object
       properties:
         status:
-          example: 404
           type: integer
+          format: int32
+          example: 404
         errorCode:
+          type: string
           example: SERVICE_NOT_IN_GRAPH
-          type: string
         message:
+          type: string
           example: Service 'unknown-service' is not present in the dependency graph.
-          type: string
         timestamp:
+          type: string
           format: date-time
-          type: string
         path:
+          type: string
           example: /v1/blast-radius
-          type: string
         serviceTransactionId:
-          example: 523f52b2-64a5-465e-b245-3efbe78f70ae
           type: string
+          example: 523f52b2-64a5-465e-b245-3efbe78f70ae
       required:
       - message
       - path
       - status
       - timestamp
+    AnalyzeBlastRadiusRequest:
       type: object
-    analyzeBlastRadius_request:
       properties:
         targetService:
+          type: string
           description: Service being changed.
           example: payment-processor
-          type: string
         targetVersion:
+          type: string
           description: Version being deployed.
           example: v2.5.0
-          type: string
         currentVersion:
+          type: string
           description: Version currently deployed (baseline).
           example: v2.4.1
-          type: string
         environment:
+          type: string
           description: Environment the change targets.
           enum:
           - STAGING
           - PRODUCTION
           example: PRODUCTION
-          type: string
         changeType:
+          type: string
           description: Nature of the change.
           enum:
           - FEATURE
@@ -916,52 +796,234 @@ components:
           - API_CONTRACT_CHANGE
           - ROLLBACK
           example: API_CONTRACT_CHANGE
-          type: string
         changeSummary:
+          type: string
           description: What's actually changing (human-readable).
           example: Removing discount_code field from /charge request; adding discount_v2
             field.
-          type: string
         affectedEndpoints:
+          type: array
           description: Specific API endpoints affected by the change.
           example:
           - POST /api/v1/charge
           - POST /api/v1/refund
           items:
             type: string
-          type: array
         changeWindowMinutes:
+          type: integer
+          format: int32
           description: How long the rollout will take.
           example: 30
-          type: integer
         proposedCanaryPercent:
+          type: integer
+          format: int32
           description: Optional. Proposed canary traffic %.
           example: 5
           maximum: 100
           minimum: 1
-          type: integer
         requestedBy:
+          type: string
           description: Engineer requesting the analysis.
           example: amit.kumar@forgesphere.example.com
-          type: string
         pullRequestUrl:
+          type: string
+          format: uri
           description: Optional PR reference for audit.
           example: https://github.com/forgesphere/payment-service/pull/4821
-          format: uri
-          type: string
       required:
       - changeType
       - environment
       - targetService
       - targetVersion
+    FailureSimulation:
       type: object
-    simulateFailures_request_scenarios_inner:
+      properties:
+        simulationId:
+          type: string
+          format: uuid
+          example: b1a2c3d4-e5f6-7890-1234-567890abcdef
+        analysisId:
+          type: string
+          format: uuid
+          example: 9c8f1a3b-6d7e-4a12-8f5e-123456789abc
+        generatedAt:
+          type: string
+          format: date-time
+        scenarios:
+          type: array
+          items:
+            $ref: "#/components/schemas/FailureSimulationScenariosInner"
+        overallRecommendation:
+          $ref: "#/components/schemas/FailureSimulationOverallRecommendation"
+        auditReference:
+          type: string
+          example: audit://blast-radius/simulation-b1a2c3d4
+      required:
+      - analysisId
+      - generatedAt
+      - overallRecommendation
+      - scenarios
+      - simulationId
+    FailureSimulationOverallRecommendation:
+      type: object
+      properties:
+        proceed:
+          type: boolean
+          example: false
+        reasoning:
+          type: string
+          example: All scenarios exceed acceptable revenue loss ($50K threshold).
+            Recommend splitting the change into smaller increments or deploying in
+            a dedicated maintenance window with 1% canary.
+        alternativeApproach:
+          type: string
+          example: "Deploy as a deprecation first (keep discount_code, add discount_v2),\
+            \ then remove in a follow-up release."
+        suggestedApprovalRequirements:
+          type: array
+          example:
+          - VP Engineering
+          - CISO
+          - Customer Success Lead
+          items:
+            type: string
+      required:
+      - proceed
+      - reasoning
+    FailureSimulationScenariosInner:
+      type: object
       properties:
         scenarioName:
+          type: string
+          example: 5% error rate at peak
+        failureMode:
+          type: string
+          enum:
+          - ERROR_RATE
+          - LATENCY_SPIKE
+          - COMPLETE_OUTAGE
+          - DATA_CORRUPTION
+          - PARTIAL_DEGRADATION
+          - MEMORY_LEAK
+          - CASCADING_FAILURE
+          example: ERROR_RATE
+        timeOfDay:
+          type: string
+          enum:
+          - OFF_PEAK
+          - NORMAL
+          - PEAK
+          - CRITICAL_WINDOW
+          example: PEAK
+        durationMinutes:
+          type: integer
+          format: int32
+          example: 15
+        userImpact:
+          $ref: "#/components/schemas/FailureSimulationScenariosInnerUserImpact"
+        revenueImpact:
+          $ref: "#/components/schemas/FailureSimulationScenariosInnerRevenueImpact"
+        recoverability:
+          $ref: "#/components/schemas/FailureSimulationScenariosInnerRecoverability"
+        cascadeRisk:
+          type: array
+          description: Which downstream services would also break.
+          example:
+          - checkout-service
+          - order-service
+          - notification-service
+          items:
+            type: string
+        verdict:
+          type: string
+          enum:
+          - ACCEPTABLE
+          - HIGH_RISK
+          - UNACCEPTABLE
+          example: UNACCEPTABLE
+      required:
+      - failureMode
+      - recoverability
+      - revenueImpact
+      - scenarioName
+      - userImpact
+    FailureSimulationScenariosInnerRecoverability:
+      type: object
+      properties:
+        autoRollbackPossible:
+          type: boolean
+          example: true
+        estimatedRecoveryMinutes:
+          type: integer
+          format: int32
+          example: 8
+        requiresManualIntervention:
+          type: boolean
+          example: false
+        dataLossPossible:
+          type: boolean
+          example: false
+    FailureSimulationScenariosInnerRevenueImpact:
+      type: object
+      properties:
+        lostRevenueUSD:
+          type: number
+          format: double
+          example: 31250.0
+        compensationCostUSD:
+          type: number
+          format: double
+          example: 8500.0
+        slaCreditsOwedUSD:
+          type: number
+          format: double
+          example: 15000.0
+        totalCostUSD:
+          type: number
+          format: double
+          example: 54750.0
+    FailureSimulationScenariosInnerUserImpact:
+      type: object
+      properties:
+        estimatedUsersAffected:
+          type: integer
+          format: int32
+          example: 245000
+        errorsBeforeRollback:
+          type: integer
+          format: int32
+          example: 4280
+        supportTicketsExpected:
+          type: integer
+          format: int32
+          example: 342
+        socialMediaMentions:
+          type: integer
+          format: int32
+          example: 48
+    SimulateFailuresRequest:
+      type: object
+      properties:
+        scenarios:
+          type: array
+          description: Failure scenarios to simulate.
+          items:
+            $ref: "#/components/schemas/SimulateFailuresRequestScenariosInner"
+          maxItems: 2147483647
+          minItems: 1
+        autoRollbackThresholds:
+          $ref: "#/components/schemas/simulateFailures_request_autoRollbackThresholds"
+      required:
+      - scenarios
+    SimulateFailuresRequestScenariosInner:
+      type: object
+      properties:
+        scenarioName:
+          type: string
           description: Human-readable name for the scenario.
           example: 5% error rate at peak
-          type: string
         failureMode:
+          type: string
           description: How the change fails.
           enum:
           - ERROR_RATE
@@ -972,17 +1034,17 @@ components:
           - MEMORY_LEAK
           - CASCADING_FAILURE
           example: ERROR_RATE
-          type: string
         errorRatePercent:
+          type: number
           description: Required when failureMode = ERROR_RATE.
           example: 5.0
-          type: number
         latencyIncreaseMs:
+          type: integer
+          format: int32
           description: Required when failureMode = LATENCY_SPIKE.
           example: 500
-          type: integer
         timeOfDay:
-          default: PEAK
+          type: string
           description: When the failure occurs.
           enum:
           - OFF_PEAK
@@ -990,614 +1052,95 @@ components:
           - PEAK
           - CRITICAL_WINDOW
           example: PEAK
-          type: string
         durationMinutes:
+          type: integer
+          format: int32
           description: How long before detection/rollback.
           example: 15
-          type: integer
       required:
       - failureMode
       - scenarioName
-      type: object
     simulateFailures_request_autoRollbackThresholds:
+      type: object
       description: Thresholds for automated rollback.
       properties:
         errorRatePercent:
+          type: number
           example: 2.0
-          type: number
         latencyP99Ms:
+          type: integer
+          format: int32
           example: 1000
-          type: integer
         customerComplaintsPerMinute:
+          type: integer
+          format: int32
           example: 10
-          type: integer
+    AnalysisList:
       type: object
-    simulateFailures_request:
       properties:
-        scenarios:
-          description: Failure scenarios to simulate.
-          items:
-            $ref: "#/components/schemas/simulateFailures_request_scenarios_inner"
-          minItems: 1
+        content:
           type: array
-        autoRollbackThresholds:
-          $ref: "#/components/schemas/simulateFailures_request_autoRollbackThresholds"
+          items:
+            $ref: "#/components/schemas/BlastRadiusAnalysis"
+        totalElements:
+          type: integer
+          format: int32
+          example: 247
+        totalPages:
+          type: integer
+          format: int32
+          example: 13
+        page:
+          type: integer
+          format: int32
+          example: 0
+        size:
+          type: integer
+          format: int32
+          example: 20
+        summary:
+          $ref: "#/components/schemas/AnalysisListSummary"
       required:
-      - scenarios
+      - content
+      - totalElements
+      - totalPages
+    AnalysisListSummary:
       type: object
-    BlastRadiusAnalysis_impact_directConsumers_inner:
-      example:
-        fallbackAvailable: false
-        criticality: TIER_0
-        serviceName: checkout-service
-        trafficSharePercent: 42.5
-      properties:
-        serviceName:
-          example: checkout-service
-          type: string
-        trafficSharePercent:
-          description: How much traffic this consumer sends.
-          example: 42.5
-          format: double
-          type: number
-        criticality:
-          enum:
-          - TIER_0
-          - TIER_1
-          - TIER_2
-          - TIER_3
-          example: TIER_0
-          type: string
-        fallbackAvailable:
-          description: Whether this consumer has a fallback path.
-          example: false
-          type: boolean
-      required:
-      - criticality
-      - serviceName
-      - trafficSharePercent
-      type: object
-    BlastRadiusAnalysis_impact_regionsAffected_inner:
-      example:
-        trafficPercent: 62.5
-        region: us-east-1
-        usersInRegion: 145000
-      properties:
-        region:
-          example: us-east-1
-          type: string
-        usersInRegion:
-          example: 145000
-          type: integer
-        trafficPercent:
-          example: 62.5
-          format: double
-          type: number
-      type: object
-    BlastRadiusAnalysis_impact_customerTierImpact_inner:
-      example:
-        tier: ENTERPRISE
-        slaBreachRisk: CRITICAL
-        revenueAtRiskUSDPerHour: 45000.0
-        usersAffected: 1200
-      properties:
-        tier:
-          enum:
-          - ENTERPRISE
-          - PRO
-          - FREE
-          - ANONYMOUS
-          example: ENTERPRISE
-          type: string
-        usersAffected:
-          example: 1200
-          type: integer
-        revenueAtRiskUSDPerHour:
-          example: 45000.0
-          format: double
-          type: number
-        slaBreachRisk:
-          enum:
-          - LOW
-          - MEDIUM
-          - HIGH
-          - CRITICAL
-          example: CRITICAL
-          type: string
-      type: object
-    BlastRadiusAnalysis_impact:
-      example:
-        usersAffectedPercent: 18.5
-        downstreamServices: 14
-        regionsAffected:
-        - trafficPercent: 62.5
-          region: us-east-1
-          usersInRegion: 145000
-        - trafficPercent: 62.5
-          region: us-east-1
-          usersInRegion: 145000
-        customerTierImpact:
-        - tier: ENTERPRISE
-          slaBreachRisk: CRITICAL
-          revenueAtRiskUSDPerHour: 45000.0
-          usersAffected: 1200
-        - tier: ENTERPRISE
-          slaBreachRisk: CRITICAL
-          revenueAtRiskUSDPerHour: 45000.0
-          usersAffected: 1200
-        directConsumers:
-        - fallbackAvailable: false
-          criticality: TIER_0
-          serviceName: checkout-service
-          trafficSharePercent: 42.5
-        - fallbackAvailable: false
-          criticality: TIER_0
-          serviceName: checkout-service
-          trafficSharePercent: 42.5
-        downstreamDepth: 4
-        revenueAtRiskUSDPerHour: 125000.0
-        dataLossRisk: MEDIUM
-        usersAffected: 245000
-      properties:
-        usersAffected:
-          description: Estimated users hit if the change fails.
-          example: 245000
-          type: integer
-        usersAffectedPercent:
-          description: Percentage of total user base.
-          example: 18.5
-          format: double
-          type: number
-        directConsumers:
-          description: Services that directly call the target service.
-          items:
-            $ref: "#/components/schemas/BlastRadiusAnalysis_impact_directConsumers_inner"
-          type: array
-        downstreamServices:
-          description: Total downstream services in the dependency chain.
-          example: 14
-          type: integer
-        downstreamDepth:
-          description: Maximum depth of the dependency chain.
-          example: 4
-          type: integer
-        regionsAffected:
-          description: Geographic regions impacted.
-          items:
-            $ref: "#/components/schemas/BlastRadiusAnalysis_impact_regionsAffected_inner"
-          type: array
-        customerTierImpact:
-          description: Impact broken down by customer tier.
-          items:
-            $ref: "#/components/schemas/BlastRadiusAnalysis_impact_customerTierImpact_inner"
-          type: array
-        revenueAtRiskUSDPerHour:
-          description: Total revenue at risk per hour.
-          example: 125000.0
-          format: double
-          type: number
-        dataLossRisk:
-          enum:
-          - NONE
-          - LOW
-          - MEDIUM
-          - HIGH
-          - CATASTROPHIC
-          example: MEDIUM
-          type: string
-      required:
-      - directConsumers
-      - downstreamServices
-      - regionsAffected
-      - usersAffected
-      type: object
-    BlastRadiusAnalysis_dependencyGraph_nodes_inner:
-      example:
-        tier: TARGET
-        estimatedImpactPercent: 100.0
-        serviceName: payment-processor
-      properties:
-        serviceName:
-          example: payment-processor
-          type: string
-        tier:
-          enum:
-          - TARGET
-          - DIRECT_CONSUMER
-          - INDIRECT_CONSUMER
-          - DOWNSTREAM
-          example: TARGET
-          type: string
-        estimatedImpactPercent:
-          example: 100.0
-          format: double
-          type: number
-      type: object
-    BlastRadiusAnalysis_dependencyGraph_edges_inner:
-      example:
-        callVolumePerMinute: 4200
-        hasFallback: false
-        from: checkout-service
-        to: payment-processor
-      properties:
-        from:
-          example: checkout-service
-          type: string
-        to:
-          example: payment-processor
-          type: string
-        callVolumePerMinute:
-          example: 4200
-          type: integer
-        hasFallback:
-          example: false
-          type: boolean
-      type: object
-    BlastRadiusAnalysis_dependencyGraph:
-      description: Full dependency graph (if includeDependencyGraph=true).
-      example:
-        nodes:
-        - tier: TARGET
-          estimatedImpactPercent: 100.0
-          serviceName: payment-processor
-        - tier: TARGET
-          estimatedImpactPercent: 100.0
-          serviceName: payment-processor
-        edges:
-        - callVolumePerMinute: 4200
-          hasFallback: false
-          from: checkout-service
-          to: payment-processor
-        - callVolumePerMinute: 4200
-          hasFallback: false
-          from: checkout-service
-          to: payment-processor
-      properties:
-        nodes:
-          items:
-            $ref: "#/components/schemas/BlastRadiusAnalysis_dependencyGraph_nodes_inner"
-          type: array
-        edges:
-          items:
-            $ref: "#/components/schemas/BlastRadiusAnalysis_dependencyGraph_edges_inner"
-          type: array
-      type: object
-    BlastRadiusAnalysis_recommendations_rollbackTriggers_inner:
-      example:
-        metric: error_rate_pct
-        windowSeconds: 60
-        action: AUTO_ROLLBACK
-        threshold: 1.0
-      properties:
-        metric:
-          example: error_rate_pct
-          type: string
-        threshold:
-          example: 1.0
-          type: number
-        windowSeconds:
-          example: 60
-          type: integer
-        action:
-          enum:
-          - ALERT
-          - PAUSE_ROLLOUT
-          - AUTO_ROLLBACK
-          example: AUTO_ROLLBACK
-          type: string
-      type: object
-    BlastRadiusAnalysis_recommendations_deployWindow:
-      example:
-        recommendedEnd: 2026-11-05T06:00:00Z
-        recommendedStart: 2026-11-05T02:00:00Z
-        reason: Lowest traffic window; 90% less user impact than peak.
-      properties:
-        recommendedStart:
-          example: 2026-11-05T02:00:00Z
-          type: string
-        recommendedEnd:
-          example: 2026-11-05T06:00:00Z
-          type: string
-        reason:
-          example: Lowest traffic window; 90% less user impact than peak.
-          type: string
-      required:
-      - reason
-      - recommendedEnd
-      - recommendedStart
-      type: object
-    BlastRadiusAnalysis_recommendations:
-      example:
-        deployWindow:
-          recommendedEnd: 2026-11-05T06:00:00Z
-          recommendedStart: 2026-11-05T02:00:00Z
-          reason: Lowest traffic window; 90% less user impact than peak.
-        recommendedCanaryPercent: 2
-        rollbackTriggers:
-        - metric: error_rate_pct
-          windowSeconds: 60
-          action: AUTO_ROLLBACK
-          threshold: 1.0
-        - metric: error_rate_pct
-          windowSeconds: 60
-          action: AUTO_ROLLBACK
-          threshold: 1.0
-        preDeployChecks:
-        - Contract Chronicle verification passed
-        - Shadow Mirror 24h with 10% traffic
-        - Rollback Commander ready with previous version
-        warningNotes:
-        - Enterprise customers use /charge exclusively — SLA impact is severe.
-        - No fallback path exists in checkout-service; cascade risk is high.
-        requiresApproval: true
-        requiredApprovers:
-        - vp-engineering@forgesphere.example.com
-        - ciso@forgesphere.example.com
-      properties:
-        recommendedCanaryPercent:
-          description: Suggested initial canary traffic %.
-          example: 2
-          maximum: 100
-          minimum: 1
-          type: integer
-        rollbackTriggers:
-          description: Metrics that should trigger automatic rollback.
-          items:
-            $ref: "#/components/schemas/BlastRadiusAnalysis_recommendations_rollbackTriggers_inner"
-          type: array
-        deployWindow:
-          $ref: "#/components/schemas/BlastRadiusAnalysis_recommendations_deployWindow"
-        requiresApproval:
-          example: true
-          type: boolean
-        requiredApprovers:
-          description: Who must approve before deploy.
-          example:
-          - vp-engineering@forgesphere.example.com
-          - ciso@forgesphere.example.com
-          items:
-            type: string
-          type: array
-        preDeployChecks:
-          description: Additional checks required before deploying.
-          example:
-          - Contract Chronicle verification passed
-          - Shadow Mirror 24h with 10% traffic
-          - Rollback Commander ready with previous version
-          items:
-            type: string
-          type: array
-        warningNotes:
-          example:
-          - Enterprise customers use /charge exclusively — SLA impact is severe.
-          - No fallback path exists in checkout-service; cascade risk is high.
-          items:
-            type: string
-          type: array
-      required:
-      - deployWindow
-      - recommendedCanaryPercent
-      - requiresApproval
-      - rollbackTriggers
-      type: object
-    AnalysisList_summary:
-      example:
-        lowRiskCount: 72
-        highRiskCount: 22
-        minimalRiskCount: 98
-        totalAnalyses: 247
-        catastrophicCount: 7
-        totalRevenueAtRiskUSD: 845000.0
-        mediumRiskCount: 48
       properties:
         totalAnalyses:
+          type: integer
+          format: int32
           example: 247
-          type: integer
         minimalRiskCount:
+          type: integer
+          format: int32
           example: 98
-          type: integer
         lowRiskCount:
+          type: integer
+          format: int32
           example: 72
-          type: integer
         mediumRiskCount:
-          example: 48
           type: integer
+          format: int32
+          example: 48
         highRiskCount:
+          type: integer
+          format: int32
           example: 22
-          type: integer
         catastrophicCount:
+          type: integer
+          format: int32
           example: 7
-          type: integer
         totalRevenueAtRiskUSD:
+          type: number
+          format: double
           example: 845000.0
-          format: double
-          type: number
-      type: object
-    FailureSimulation_scenarios_inner_userImpact:
-      example:
-        estimatedUsersAffected: 245000
-        supportTicketsExpected: 342
-        errorsBeforeRollback: 4280
-        socialMediaMentions: 48
-      properties:
-        estimatedUsersAffected:
-          example: 245000
-          type: integer
-        errorsBeforeRollback:
-          example: 4280
-          type: integer
-        supportTicketsExpected:
-          example: 342
-          type: integer
-        socialMediaMentions:
-          example: 48
-          type: integer
-      type: object
-    FailureSimulation_scenarios_inner_revenueImpact:
-      example:
-        lostRevenueUSD: 31250.0
-        totalCostUSD: 54750.0
-        compensationCostUSD: 8500.0
-        slaCreditsOwedUSD: 15000.0
-      properties:
-        lostRevenueUSD:
-          example: 31250.0
-          format: double
-          type: number
-        compensationCostUSD:
-          example: 8500.0
-          format: double
-          type: number
-        slaCreditsOwedUSD:
-          example: 15000.0
-          format: double
-          type: number
-        totalCostUSD:
-          example: 54750.0
-          format: double
-          type: number
-      type: object
-    FailureSimulation_scenarios_inner_recoverability:
-      example:
-        autoRollbackPossible: true
-        dataLossPossible: false
-        estimatedRecoveryMinutes: 8
-        requiresManualIntervention: false
-      properties:
-        autoRollbackPossible:
-          example: true
-          type: boolean
-        estimatedRecoveryMinutes:
-          example: 8
-          type: integer
-        requiresManualIntervention:
-          example: false
-          type: boolean
-        dataLossPossible:
-          example: false
-          type: boolean
-      type: object
-    FailureSimulation_scenarios_inner:
-      example:
-        userImpact:
-          estimatedUsersAffected: 245000
-          supportTicketsExpected: 342
-          errorsBeforeRollback: 4280
-          socialMediaMentions: 48
-        durationMinutes: 15
-        failureMode: ERROR_RATE
-        recoverability:
-          autoRollbackPossible: true
-          dataLossPossible: false
-          estimatedRecoveryMinutes: 8
-          requiresManualIntervention: false
-        verdict: UNACCEPTABLE
-        scenarioName: 5% error rate at peak
-        revenueImpact:
-          lostRevenueUSD: 31250.0
-          totalCostUSD: 54750.0
-          compensationCostUSD: 8500.0
-          slaCreditsOwedUSD: 15000.0
-        cascadeRisk:
-        - checkout-service
-        - order-service
-        - notification-service
-        timeOfDay: PEAK
-      properties:
-        scenarioName:
-          example: 5% error rate at peak
-          type: string
-        failureMode:
-          enum:
-          - ERROR_RATE
-          - LATENCY_SPIKE
-          - COMPLETE_OUTAGE
-          - DATA_CORRUPTION
-          - PARTIAL_DEGRADATION
-          - MEMORY_LEAK
-          - CASCADING_FAILURE
-          example: ERROR_RATE
-          type: string
-        timeOfDay:
-          enum:
-          - OFF_PEAK
-          - NORMAL
-          - PEAK
-          - CRITICAL_WINDOW
-          example: PEAK
-          type: string
-        durationMinutes:
-          example: 15
-          type: integer
-        userImpact:
-          $ref: "#/components/schemas/FailureSimulation_scenarios_inner_userImpact"
-        revenueImpact:
-          $ref: "#/components/schemas/FailureSimulation_scenarios_inner_revenueImpact"
-        recoverability:
-          $ref: "#/components/schemas/FailureSimulation_scenarios_inner_recoverability"
-        cascadeRisk:
-          description: Which downstream services would also break.
-          example:
-          - checkout-service
-          - order-service
-          - notification-service
-          items:
-            type: string
-          type: array
-        verdict:
-          enum:
-          - ACCEPTABLE
-          - HIGH_RISK
-          - UNACCEPTABLE
-          example: UNACCEPTABLE
-          type: string
-      required:
-      - failureMode
-      - recoverability
-      - revenueImpact
-      - scenarioName
-      - userImpact
-      type: object
-    FailureSimulation_overallRecommendation:
-      example:
-        proceed: false
-        suggestedApprovalRequirements:
-        - VP Engineering
-        - CISO
-        - Customer Success Lead
-        reasoning: All scenarios exceed acceptable revenue loss ($50K threshold).
-          Recommend splitting the change into smaller increments or deploying in a
-          dedicated maintenance window with 1% canary.
-        alternativeApproach: "Deploy as a deprecation first (keep discount_code, add\
-          \ discount_v2), then remove in a follow-up release."
-      properties:
-        proceed:
-          example: false
-          type: boolean
-        reasoning:
-          example: All scenarios exceed acceptable revenue loss ($50K threshold).
-            Recommend splitting the change into smaller increments or deploying in
-            a dedicated maintenance window with 1% canary.
-          type: string
-        alternativeApproach:
-          example: "Deploy as a deprecation first (keep discount_code, add discount_v2),\
-            \ then remove in a follow-up release."
-          type: string
-        suggestedApprovalRequirements:
-          example:
-          - VP Engineering
-          - CISO
-          - Customer Success Lead
-          items:
-            type: string
-          type: array
-      required:
-      - proceed
-      - reasoning
-      type: object
   securitySchemes:
     bearerAuth:
-      bearerFormat: JWT
-      description: JWT token issued to release engineers and SREs.
-      scheme: bearer
-      type: http
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: /oauth2/token
+          scopes:
+            api.read: Read access to the API
+            api.write: Write access to the API
